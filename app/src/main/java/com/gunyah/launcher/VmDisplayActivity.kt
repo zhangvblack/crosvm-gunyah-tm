@@ -119,8 +119,8 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
         private const val SP_DOCK_TIP = "dock_tip"
         private const val EDGE_SNAP_DP = 46f    // 浮球中心离边小于它 → 吸附收纳
         private const val UNSNAP_DP = 42f       // 细条向屏内拖超过它 → 还原浮球
-        private const val DOCK_THICK_DP = 8f    // 竖杠条厚度：贴边一条细杠
-        private const val DOCK_LONG_DP = 84f    // 竖杠条长度
+        private const val DOCK_THICK_DP = 24f    // 竖杠条厚度：贴边一条细杠
+        private const val DOCK_LONG_DP = 120f    // 竖杠条长度
         // v2.0.20：键盘窗口自由拖动位置（按屏幕宽高比例记忆）+ 显示器防误退锁
         private const val SP_KB_OFF_X = "kb_off_x"
         private const val SP_KB_OFF_Y = "kb_off_y"
@@ -1463,15 +1463,15 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
     private fun buildBall(): TextView = TextView(this).apply {
         text = "⌨"
         setTextColor(Color.WHITE)
-        textSize = 20f
+        textSize = 26f
         gravity = Gravity.CENTER
-        setBackgroundColor(0xAA4488AA.toInt())
+        setBackgroundColor(0xE63A7E9B.toInt())
         val d = resources.displayMetrics.density
-        val size = (44 * d).roundToInt()
+        val size = (58 * d).roundToInt()
         layoutParams = FrameLayout.LayoutParams(size, size).apply {
             gravity = Gravity.TOP or Gravity.START
         }
-        alpha = 0.85f
+        alpha = 0.95f
         var downX = 0f; var downY = 0f; var ox = 0f; var oy = 0f; var moved = false
         var undocked = false   // 本次拖动是否已从细条还原成浮球
         var longPress: Runnable? = null
@@ -1566,13 +1566,13 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
         lp.gravity = Gravity.TOP or Gravity.START
         lp.rightMargin = 0; lp.bottomMargin = 0
         if (dockEdge == 0) {
-            val size = (44 * d).roundToInt()
+            val size = (58 * d).roundToInt()
             lp.width = size; lp.height = size
-            ball.setBackgroundColor(0xAA4488AA.toInt())   // 与原浮球完全一致，不做外观负优化
+            ball.setBackgroundColor(0xE63A7E9B.toInt())   // 与原浮球完全一致，不做外观负优化
             ball.text = "⌨"
             ball.setTextColor(Color.WHITE)
-            ball.textSize = 20f
-            ball.alpha = 0.85f
+            ball.textSize = 26f
+            ball.alpha = 0.95f
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 runCatching { ball.setRenderEffect(null) }
             }
@@ -1603,10 +1603,10 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
     private fun buildDockGlass(vertical: Boolean, thick: Int, d: Float): LayerDrawable {
         val glass = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
-            intArrayOf(0x66FFFFFF.toInt(), 0x33FFFFFF.toInt(), 0x1EFFFFFF.toInt())
+            intArrayOf(0xE6407FA8.toInt(), 0xC0326E92.toInt(), 0x9E2A5F80.toInt())
         ).apply {
             cornerRadius = thick / 2f
-            setStroke((0.8f * d).roundToInt().coerceAtLeast(1), 0x80FFFFFF.toInt())
+            setStroke((1.6f * d).roundToInt().coerceAtLeast(2), 0xFF8FD4F2.toInt())
         }
         val gw = if (vertical) (3 * d).roundToInt() else (24 * d).roundToInt()
         val gh = if (vertical) (24 * d).roundToInt() else (3 * d).roundToInt()
@@ -1983,85 +1983,85 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
         rebuildKeyRows()
     }
 
-    /** 字母页：4 行紧凑手机输入法布局。Z 左边是 ⇄（切快捷键页）。 */
+    /** 主键页：字母 + 修饰键 + 方向键，一页搞定。 */
     private val letterRows: List<List<KbKey>> by lazy {
         val K = KeyCodeMapper
         listOf(
             kbLetters("qwertyuiop", K.KEY_Q),
             kbLetters("asdfghjkl", K.KEY_A),
-            // v1.9.64：字母页补 Shift 键（粘滞大写），原 ⇄ 保留在 Shift 右侧
-            listOf(KbKey("⇧", 0, 1.1f, action = "shift"),
-                KbKey("⇄", 0, 1.2f, action = "page_shortcut")) +
+            listOf(KbKey("⇧", 0, 1.1f, action = "shift")) +
                 kbLetters("zxcvbnm", K.KEY_Z) +
-                listOf(KbKey("⌫", K.KEY_BACKSPACE, 1.5f)),
+                listOf(KbKey("⌫", K.KEY_BACKSPACE, 1.4f)),
             listOf(
-                KbKey("?123", 0, 1.1f, action = "page_num"),
-                KbKey("▲", K.KEY_UP), KbKey("▼", K.KEY_DOWN),
-                KbKey(",", K.KEY_COMMA), KbKey("空格", K.KEY_SPACE, 3f),
-                KbKey(".", K.KEY_DOT), KbKey("↵", K.KEY_ENTER, 1.2f),
+                KbKey("Ctrl", K.KEY_LEFTCTRL, 1.2f),
+                KbKey("Alt", K.KEY_LEFTALT, 1.1f),
+                KbKey("Esc", K.KEY_ESC, 1.1f),
+                KbKey("Tab", K.KEY_TAB, 1.1f),
+                KbKey("空格", K.KEY_SPACE, 2.6f),
+                KbKey("↵", K.KEY_ENTER, 1.2f),
+            ),
+            listOf(
+                KbKey("?123", 0, 1.3f, action = "page_num"),
+                KbKey("F1-12", 0, 1.4f, action = "page_func"),
+                KbKey("◀", K.KEY_LEFT), KbKey("▲", K.KEY_UP),
+                KbKey("▼", K.KEY_DOWN), KbKey("▶", K.KEY_RIGHT),
             ),
         )
     }
 
-    /** 数字/符号页：从字母页 ?123 进入，⇄ 回字母页。 */
+    /** 符号页：按 PC 键盘排布，第二行开始就是标准符号位。 */
     private val numPadRows: List<List<KbKey>> by lazy {
         val K = KeyCodeMapper
         listOf(
             kbLetters("1234567890", K.KEY_1),
-            listOf(KbKey("-", K.KEY_MINUS), KbKey("/", K.KEY_SLASH),
-                KbKey(":", K.KEY_SEMICOLON, shift = true), KbKey(";", K.KEY_SEMICOLON),
+            listOf(
+                KbKey("-", K.KEY_MINUS), KbKey("=", K.KEY_EQUAL),
+                KbKey("[", K.KEY_LEFTBRACE), KbKey("]", K.KEY_RIGHTBRACE),
+                KbKey("\\", K.KEY_BACKSLASH), KbKey(";", K.KEY_SEMICOLON),
+                KbKey("'", K.KEY_APOSTROPHE), KbKey(",", K.KEY_COMMA),
+                KbKey(".", K.KEY_DOT), KbKey("/", K.KEY_SLASH),
+            ),
+            listOf(
+                KbKey("`", K.KEY_GRAVE, shift = true), KbKey("~", K.KEY_GRAVE),
+                KbKey("!", K.KEY_1, shift = true), KbKey("@", K.KEY_2, shift = true),
+                KbKey("#", K.KEY_3, shift = true), KbKey("$", K.KEY_4, shift = true),
+                KbKey("%", K.KEY_5, shift = true), KbKey("^", K.KEY_6, shift = true),
+                KbKey("⌫", K.KEY_BACKSPACE, 1.4f),
+            ),
+            listOf(
+                KbKey("&", K.KEY_7, shift = true), KbKey("*", K.KEY_8, shift = true),
                 KbKey("(", K.KEY_9, shift = true), KbKey(")", K.KEY_0, shift = true),
-                KbKey("⌫", K.KEY_BACKSPACE, 1.4f)),
-            listOf(KbKey("⇄", 0, 1.4f, action = "page_letters"),
-                KbKey("@", K.KEY_2, shift = true), KbKey("\"", K.KEY_APOSTROPHE, shift = true),
-                KbKey("'", K.KEY_APOSTROPHE), KbKey("!", K.KEY_1, shift = true),
-                KbKey("?", K.KEY_SLASH, shift = true), KbKey("↵", K.KEY_ENTER, 1.4f)),
-            listOf(KbKey("Space", K.KEY_SPACE, 6f)),
+                KbKey("_", K.KEY_MINUS, shift = true), KbKey("+", K.KEY_EQUAL, shift = true),
+                KbKey("{", K.KEY_LEFTBRACE, shift = true), KbKey("}", K.KEY_RIGHTBRACE, shift = true),
+                KbKey("|", K.KEY_BACKSLASH, shift = true),
+            ),
+            listOf(
+                KbKey("abc", 0, 1.6f, action = "page_letters"),
+                KbKey("Ctrl", K.KEY_LEFTCTRL, 1.2f),
+                KbKey("Alt", K.KEY_LEFTALT, 1.1f),
+                KbKey("空格", K.KEY_SPACE, 3f),
+                KbKey("↵", K.KEY_ENTER, 1.4f),
+            ),
         )
     }
 
-    /**
-     * 快捷键页：按用户最终确认图。⇄ 回字母页；⋮ 进 F 功能页。
-     * Windows LOGO / 三横菜单为纯图形图标键（无文字），分别发 LEFTMETA / APPSEFIND(菜单) 键码。
-     */
-    private val shortcutRows: List<List<KbKey>> by lazy {
-        val K = KeyCodeMapper
-        listOf(
-            listOf(KbKey("Esc", K.KEY_ESC), KbKey("Tab", K.KEY_TAB),
-                KbKey("PgUp", K.KEY_PAGEUP), KbKey("Home", K.KEY_HOME),
-                KbKey("▲", K.KEY_UP), KbKey("End", K.KEY_END),
-                KbKey("⋮", 0, action = "page_func")),
-            listOf(KbKey("Ctrl", K.KEY_LEFTCTRL), KbKey("Alt", K.KEY_LEFTALT),
-                KbKey("PgDn", K.KEY_PAGEDOWN), KbKey("◀", K.KEY_LEFT),
-                KbKey("▼", K.KEY_DOWN), KbKey("▶", K.KEY_RIGHT),
-                KbKey("⇄", 0, action = "page_letters")),
-            // v1.9.1：装机/OOBE 报错界面调命令行要用 Shift+F10，两个分开的键没法同时按。
-            // 这里做一个一键组合键：点它走 sendKeyTap(shift=true)，发 Shift↓ F10↓ F10↑ Shift↑。
-            listOf(KbKey("⇧F10", K.KEY_F10, 1.3f, shift = true),
-                KbKey("⇧", K.KEY_LEFTSHIFT, 1.0f),
-                KbKey("", K.KEY_LEFTMETA, icon = "win"),
-                KbKey("Del", K.KEY_DELETE),
-                KbKey("", 127, icon = "menu"),   // 127 = KEY_COMPOSE(应用菜单键)
-                KbKey("PrtSc", K.KEY_SYSRQ)),
-        )
-    }
-
-    /** F 功能页：空格上滑/⋮ 进入，F1-F12 完整，⇄ 回字母页。 */
+    /** F 功能页：F1-F12 一屏，abc 回主键页。 */
     private val funcRows: List<List<KbKey>> by lazy {
         val K = KeyCodeMapper
         listOf(
             (1..6).map { KbKey("F$it", K.KEY_F1 + it - 1) },
             (7..12).map { KbKey("F$it", if (it <= 10) K.KEY_F1 + it - 1 else if (it == 11) K.KEY_F11 else K.KEY_F12) },
-            // v1.9.1：F 页也放一个 Shift+F10 一键组合，装机报错界面可直接调命令行
-            listOf(KbKey("⇧F10 cmd", K.KEY_F10, 3f, shift = true),
-                KbKey("⇄ 返回字母", 0, 3f, action = "page_letters")),
+            listOf(
+                KbKey("⇧F10", K.KEY_F10, 1.6f, shift = true),
+                KbKey("abc", 0, 1.6f, action = "page_letters"),
+                KbKey("?123", 0, 1.4f, action = "page_num"),
+            ),
         )
     }
 
     private fun currentRows(): List<List<KbKey>> = when (kbPage) {
-        1 -> shortcutRows
-        2 -> funcRows
-        3 -> numPadRows
+        1 -> numPadRows
+        3 -> funcRows
         else -> letterRows
     }
 
@@ -2651,7 +2651,7 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
     private fun handleKeyAction(action: String) {
         when (action) {
             "page_shortcut" -> switchKbPage(1)
-            "page_func" -> switchKbPage(2)
+            "page_func" -> switchKbPage(3)
             "page_num" -> switchKbPage(3)
             "page_letters" -> switchKbPage(0)
             // v1.9.65：短按 ⇧ —— 锁定时解锁，否则切换粘滞大写
