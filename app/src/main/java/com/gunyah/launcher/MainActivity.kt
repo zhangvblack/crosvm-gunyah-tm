@@ -662,16 +662,23 @@ class MainActivity : BaseActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
         // 上方：导入镜像 + 光盘按钮，固定宽度的小卡片，整行居中（单个时也保持小卡片大小）
+        // 2×2：镜像 / 光盘 一行，系统盘 / 存储盘 一行，按钮更大更好点
         val otherRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            val m = (6f * dm.density).toInt()
-            val bw = ((dm.widthPixels - pad * 2 - m * 3) / 4)
-            listOf(btnImport, btnIso, btnBlank, btnData).forEachIndexed { i, v ->
-                addView(v, LinearLayout.LayoutParams(bw, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    if (i > 0) leftMargin = m
-                })
+            val m = (8f * dm.density).toInt()
+            val bw = ((dm.widthPixels - pad * 2 - m) / 2)
+            fun pair(a: View, b: View) = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                addView(a, LinearLayout.LayoutParams(bw, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { rightMargin = m })
+                addView(b, LinearLayout.LayoutParams(bw, ViewGroup.LayoutParams.WRAP_CONTENT))
             }
+            addView(pair(btnImport, btnIso))
+            addView(pair(btnBlank, btnData), LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = m })
         }
 
         // 状态栏 / 底部导航条高度：edge-to-edge 后内容需让开，避免顶到状态栏图标 / 手势条
@@ -1249,7 +1256,7 @@ class MainActivity : BaseActivity() {
         btnBlank.text = if (winSel) "系统盘" else "新建安装盘"
         val dataPath = sp.getString(K_DATA_DISK, "") ?: ""
         btnData.text = if (dataPath.isNotBlank()) "移除存储盘" else "存储盘"
-        btnImport.text = if (isLinux) "导入成品镜像" else "导入 PE 镜像"
+        btnImport.text = if (isLinux) "成品镜像" else "PE 镜像"
         refreshGpuLabButton()
         val preset = if (m == MODE_WIN11) winPreset else linuxPreset
         val disk = diskFor(m)
