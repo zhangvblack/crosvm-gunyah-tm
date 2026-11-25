@@ -1550,14 +1550,14 @@ class MainActivity : BaseActivity() {
                 setPadding(0, 0, 0, dp(10f))
             })
             addView(TextView(this@MainActivity).apply {
-                text = "额外的读写磁盘：可以挂已有镜像，也可以直接新建一块空白盘。"
+                text = "挂载一块独立的存储磁盘（和系统盘并存）。要先停止虚拟机，启动中不能加盘。"
                 textSize = 13f
                 setTextColor(Glass.textLog())
                 setPadding(0, 0, 0, dp(4f))
             })
         }
-        val btnPick = glassBtn("挂载已有镜像 / 磁盘文件")
-        val btnNew = glassBtn("新建空白存储盘")
+        val btnPick = glassBtn("挂载已有存储盘")
+        val btnNew = glassBtn("新建存储盘")
         val btnCancel = glassBtn("取消")
         box.addView(btnPick); box.addView(btnNew); box.addView(btnCancel)
         val dialog = HapticDialog(this).apply {
