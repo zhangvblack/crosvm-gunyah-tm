@@ -1286,7 +1286,9 @@ class MainActivity : BaseActivity() {
                 "C 盘: ${if (tgt.isNotBlank()) File(tgt).name else "未建"}\n\n" +
                 "装系统：①「导入 PE 镜像」②「导入光盘」③「系统盘」\n" +
                 "④启动模式=优先 PE 启动 → 启动 → 进 PE 桌面后运行「一键注入 VirtIO 驱动」前先用系统安装器装 Win11 到 C 盘。\n" +
-                "装完切「优先 C 盘启动」即可进系统。PE/C盘/ISO 保存在 /sdcard/GunyahLauncher/disks/。"
+                "装完切「优先 C 盘启动」即可进系统。PE/C盘/ISO 保存在 /sdcard/GunyahLauncher/disks/。\n" +
+                "存储盘：挂一块额外磁盘给 guest 放数据（读写），可选已有镜像或直接新建空白盘，卸载只取消挂载不删文件。\n" +
+                "驱动：装好系统后设备管理器里有感叹号时，用 D:\\Drivers 对应目录更新——触摸 vioinput、网卡 netkvm、声卡 viosnd、磁盘 viostor、显卡 viogpudo。"
         })
     }
 
