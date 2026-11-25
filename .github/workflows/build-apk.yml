@@ -28,6 +28,13 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null 2>&1 || true
           "$SDKM" --install "ndk;26.1.10909125" "cmake;3.22.1" "platforms;android-36" "build-tools;36.0.0" > /dev/null
 
+      - name: gradle.properties
+        run: |
+          cp gradle.properties.example gradle.properties
+          sed -i '/^RELEASE_/d' gradle.properties
+          grep -q 'android.useAndroidX' gradle.properties || echo 'android.useAndroidX=true' >> gradle.properties
+          cat gradle.properties
+
       - name: Build debug APK
         run: |
           chmod +x gradlew
