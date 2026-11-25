@@ -1556,7 +1556,7 @@ class MainActivity : BaseActivity() {
                 setPadding(0, 0, 0, dp(4f))
             })
         }
-        val btnPick = glassBtn("挂载已有存储盘")
+        val btnPick = glassBtn("挂载存储盘 / 镜像文件盘")
         val btnNew = glassBtn("新建存储盘")
         val btnCancel = glassBtn("取消")
         box.addView(btnPick); box.addView(btnNew); box.addView(btnCancel)
@@ -1581,56 +1581,117 @@ class MainActivity : BaseActivity() {
         dialog.show()
     }
 
-    /** 新建一块空白 qcow2 当存储盘（默认 64G），建好后直接挂上。 */
+    /** 新建一块空白 qcow2 存储盘：可自定义名称与容量，建好后直接挂上。 */
     private fun promptNewStorageDisk() {
         val dm = resources.displayMetrics
-        val input = EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        fun dp(v: Float) = (v * dm.density).toInt()
+
+        fun styledInput(): EditText = EditText(this).apply {
+            setTextColor(Glass.textPrimary())
+            textSize = 16f
+            setPadding(dp(4f), dp(6f), dp(4f), dp(6f))
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(Color.TRANSPARENT)
+                setStroke(dp(1.5f).coerceAtLeast(1), Glass.indicator())
+            }
+        }
+        fun label(t: String) = TextView(this).apply {
+            text = t
+            textSize = 13f
+            setTextColor(Glass.indicator())
+            setPadding(0, dp(10f), 0, dp(2f))
+        }
+        fun dlgBtn(t: String) = Button(this).apply {
+            text = t
+            background = Glass.button(this@MainActivity)
+            setTextColor(Glass.textPrimary())
+            textSize = 14f
+            isAllCaps = false
+            minHeight = dp(46f); maxHeight = dp(46f)
+            layoutParams = LinearLayout.LayoutParams(0, dp(46f), 1f).apply {
+                leftMargin = dp(6f); rightMargin = dp(6f)
+            }
+            Glass.crystalTouch(this)
+        }
+
+        val nameInput = styledInput().apply {
+            setText("storage_${System.currentTimeMillis() / 1000}")
+            setSelection(text.length)
+            hint = "磁盘名称"
+            inputType = InputType.TYPE_CLASS_TEXT
+            isSingleLine = true
+        }
+        val sizeInput = styledInput().apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
             setText("64")
             setSelection(text.length)
             hint = "容量 GB（8~512）"
-            setTextColor(Glass.textPrimary())
-            val p = (12f * dm.density).toInt()
-            setPadding(p, p, p, p)
         }
-        val host = FrameLayout(this).apply {
+        val btnCancel = dlgBtn("取消")
+        val btnCreate = dlgBtn("创建")
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             background = Glass.panel(this@MainActivity, 18f)
-            val p = (18f * dm.density).toInt()
-            setPadding(p, p, p, p)
-            addView(input, FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
+            setPadding(dp(18f), dp(18f), dp(18f), dp(18f))
+            addView(TextView(this@MainActivity).apply {
+                text = "新建存储盘 (qcow2)"
+                textSize = 20f
+                setTextColor(Glass.textPrimary())
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "自定义磁盘名称与容量，创建 qcow2 稀疏盘。\n保存位置：/sdcard/GunyahLauncher/disks/"
+                textSize = 13f
+                setTextColor(Glass.textLog())
+                setPadding(0, dp(8f), 0, 0)
+            })
+            addView(label("磁盘名称")); addView(nameInput)
+            addView(label("容量 (GB)")); addView(sizeInput)
+            addView(LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(14f), 0, 0)
+                addView(btnCancel); addView(btnCreate)
+            })
         }
-        val dlg = android.app.AlertDialog.Builder(this)
-            .setTitle("新建存储盘")
-            .setView(host)
-            .setPositiveButton("创建") { _, _ ->
-                val gb = (input.text.toString().toIntOrNull() ?: 64).coerceIn(8, 512)
-                val name = "storage_${System.currentTimeMillis() / 1000}"
-                Thread {
-                    val path: String? = try {
-                        GunyahManager.createQcow2Disk(this, name, gb).getOrNull()
-                    } catch (t: Throwable) {
-                        null
-                    }
-                    runOnUiThread {
-                        if (path.isNullOrBlank()) {
-                            Toast.makeText(this, "创建失败", Toast.LENGTH_SHORT).show()
-                        } else {
-                            sp.edit().putString(K_DATA_DISK, path).apply()
-                            Toast.makeText(this, "已新建 ${gb}GB 存储盘并挂载", Toast.LENGTH_SHORT).show()
-                            setLogText("存储盘已创建：${File(path).name}（${gb}G，读写挂载）")
-                            pickMode(mode)
-                        }
-                    }
-                }.start()
+
+        val dialog = HapticDialog(this).apply {
+            setContentView(wrapDialogContent(box))
+            window?.apply {
+                setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                setLayout((dm.widthPixels * 0.9f).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
+                if (android.os.Build.VERSION.SDK_INT >= 32) {
+                    addFlags(android.view.WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                    setBackgroundBlurRadius((28f * dm.density).toInt().coerceAtLeast(1))
+                }
             }
-            .setNegativeButton("取消", null)
-            .create()
-        dlg.setOnShowListener {
-            dlg.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            dlg.window?.setLayout((dm.widthPixels * 0.9f).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
+            setCancelable(true); setCanceledOnTouchOutside(true)
         }
-        dlg.show()
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnCreate.setOnClickListener {
+            val gb = (sizeInput.text.toString().toIntOrNull() ?: 64).coerceIn(8, 512)
+            val raw = (nameInput.text.toString().ifBlank { "storage" }).replace(" ", "_")
+            val name = if (raw.endsWith(".qcow2")) raw.dropLast(6) else raw
+            dialog.dismiss()
+            Thread {
+                val path: String? = try {
+                    GunyahManager.createQcow2Disk(this, name, gb).getOrNull()
+                } catch (t: Throwable) {
+                    null
+                }
+                runOnUiThread {
+                    if (path.isNullOrBlank()) {
+                        Toast.makeText(this, "创建失败", Toast.LENGTH_SHORT).show()
+                    } else {
+                        sp.edit().putString(K_DATA_DISK, path).apply()
+                        Toast.makeText(this, "已新建 ${gb}GB 存储盘并挂载", Toast.LENGTH_SHORT).show()
+                        setLogText("存储盘已创建：${File(path).name}（${gb}G，读写挂载）")
+                        pickMode(mode)
+                    }
+                }
+            }.start()
+        }
+        dialog.show()
     }
 
     /** 当前模式已选的光盘 ISO 路径。 */
