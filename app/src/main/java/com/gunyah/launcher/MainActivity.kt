@@ -309,7 +309,7 @@ class MainActivity : BaseActivity() {
         btnImport = glassButton("导入镜像")
         btnIso = glassButton("导入光盘")
         btnBlank = glassButton("系统盘")
-        btnData = glassButton("数据盘")
+        btnData = glassButton("存储盘")
         btnBootMode = glassButton("优先 PE 启动（装系统）", outlined = true)
         // v1.9.32：显示切换 + 原生显示合并为一张玻璃卡（左右两半 + 中间竖线），
         // 省下一条按钮的高度让给启动/停止，避免误点。
@@ -1248,7 +1248,7 @@ class MainActivity : BaseActivity() {
         btnIso.text = if (isoSelected) "移除光盘" else "导入光盘"
         btnBlank.text = if (winSel) "系统盘" else "新建安装盘"
         val dataPath = sp.getString(K_DATA_DISK, "") ?: ""
-        btnData.text = if (dataPath.isNotBlank()) "移除数据盘" else "数据盘"
+        btnData.text = if (dataPath.isNotBlank()) "移除存储盘" else "存储盘"
         btnImport.text = if (isLinux) "导入成品镜像" else "导入 PE 镜像"
         refreshGpuLabButton()
         val preset = if (m == MODE_WIN11) winPreset else linuxPreset
@@ -1511,12 +1511,58 @@ class MainActivity : BaseActivity() {
         val cur = sp.getString(K_DATA_DISK, "") ?: ""
         if (cur.isNotBlank()) {
             sp.edit().putString(K_DATA_DISK, "").apply()
-            Toast.makeText(this, "已移除数据盘（文件保留）", Toast.LENGTH_SHORT).show()
-            setLogText("已移除数据盘 · 下次启动不再挂载")
+            Toast.makeText(this, "已移除存储盘（文件保留）", Toast.LENGTH_SHORT).show()
+            setLogText("已移除存储盘 · 下次启动不再挂载")
             pickMode(mode)
-        } else {
-            startActivityForResult(Intent(this, FilePickerActivity::class.java), REQ_DATA)
+            return
         }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("存储盘")
+            .setItems(arrayOf("挂载已有镜像 / 磁盘文件", "新建空白存储盘")) { _, which ->
+                if (which == 0) {
+                    startActivityForResult(Intent(this, FilePickerActivity::class.java), REQ_DATA)
+                } else {
+                    promptNewStorageDisk()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    /** 新建一块空白 qcow2 当存储盘（默认 64G），建好后直接挂上。 */
+    private fun promptNewStorageDisk() {
+        val dm = resources.displayMetrics
+        val input = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setText("64")
+            setSelection(text.length)
+            hint = "容量 GB（8~512）"
+            setTextColor(Glass.textPrimary())
+            val p = (12f * dm.density).toInt()
+            setPadding(p, p, p, p)
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("新建存储盘")
+            .setView(input)
+            .setPositiveButton("创建") { _, _ ->
+                val gb = (input.text.toString().toIntOrNull() ?: 64).coerceIn(8, 512)
+                val name = "storage_${System.currentTimeMillis() / 1000}"
+                Thread {
+                    val path = runCatching { GunyahManager.createQcow2Disk(this, name, gb) }.getOrNull()
+                    runOnUiThread {
+                        if (path.isNullOrBlank()) {
+                            Toast.makeText(this, "创建失败", Toast.LENGTH_SHORT).show()
+                        } else {
+                            sp.edit().putString(K_DATA_DISK, path).apply()
+                            Toast.makeText(this, "已新建 ${gb}GB 存储盘并挂载", Toast.LENGTH_SHORT).show()
+                            setLogText("存储盘已创建：${File(path).name}（${gb}G，读写挂载）")
+                            pickMode(mode)
+                        }
+                    }
+                }.start()
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     /** 当前模式已选的光盘 ISO 路径。 */
