@@ -1558,8 +1558,9 @@ class MainActivity : BaseActivity() {
         }
         val btnPick = glassBtn("挂载存储盘 / 镜像文件盘")
         val btnNew = glassBtn("新建存储盘")
+        val btnGuide = glassBtn("格式化教程（新建盘首次使用）")
         val btnCancel = glassBtn("取消")
-        box.addView(btnPick); box.addView(btnNew); box.addView(btnCancel)
+        box.addView(btnPick); box.addView(btnNew); box.addView(btnGuide); box.addView(btnCancel)
         val dialog = HapticDialog(this).apply {
             setContentView(wrapDialogContent(box))
             window?.apply {
@@ -1578,7 +1579,77 @@ class MainActivity : BaseActivity() {
             startActivityForResult(Intent(this, FilePickerActivity::class.java), REQ_DATA)
         }
         btnNew.setOnClickListener { dialog.dismiss(); promptNewStorageDisk() }
+        btnGuide.setOnClickListener { dialog.dismiss(); showFormatGuide() }
         dialog.show()
+    }
+
+    /** 新建的空白存储盘要在 Windows 里初始化+格式化一次才能用，这里给分步教程。 */
+    private fun showFormatGuide() {
+        val dm = resources.displayMetrics
+        fun dp(v: Float) = (v * dm.density).toInt()
+        val text = """
+            新建的存储盘是一块空白磁盘，Windows 里要先初始化 + 格式化一次（只需做一次）。
+
+            1. 按 Win + R，输入 diskmgmt.msc 回车，打开「磁盘管理」
+            2. 首次挂载会弹「初始化磁盘」：选 GPT → 确定
+               （选 MBR 也行，但大于 2TB 的盘必须用 GPT）
+            3. 在「磁盘 1」后面那块黑色「未分配」上右键 → 新建简单卷
+            4. 一直点下一步：
+               • 卷大小：默认全盘
+               • 分配盘符：默认即可
+               • 文件系统：NTFS，勾选「执行快速格式化」
+            5. 完成后出现新盘符（如 D:），打开就能存东西
+
+            注意：别点「删除卷」或「初始化」去覆盖已有分区，会清空数据。
+            这块盘以后会一直保留分区和文件，再次挂载直接可用。
+        """.trimIndent()
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = Glass.panel(this@MainActivity, 18f)
+            setPadding(dp(18f), dp(18f), dp(18f), dp(18f))
+            addView(TextView(this@MainActivity).apply {
+                text = "格式化教程"
+                textSize = 20f
+                setTextColor(Glass.textPrimary())
+                setPadding(0, 0, 0, dp(10f))
+            })
+            addView(android.widget.ScrollView(this@MainActivity).apply {
+                addView(TextView(this@MainActivity).apply {
+                    text = text
+                    textSize = 13.5f
+                    setTextColor(Glass.textLog())
+                    setLineSpacing(dp(3f).toFloat(), 1f)
+                })
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, dp(380f))
+            })
+        }
+        val btnOk = Button(this).apply {
+            text = "知道了"
+            background = Glass.button(this@MainActivity)
+            setTextColor(Glass.textPrimary())
+            textSize = 14f
+            isAllCaps = false
+            minHeight = dp(46f); maxHeight = dp(46f)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(46f)).apply { topMargin = dp(12f) }
+            Glass.crystalTouch(this)
+        }
+        box.addView(btnOk)
+        val d = HapticDialog(this).apply {
+            setContentView(wrapDialogContent(box))
+            window?.apply {
+                setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                setLayout((dm.widthPixels * 0.92f).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
+                if (android.os.Build.VERSION.SDK_INT >= 32) {
+                    addFlags(android.view.WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                    setBackgroundBlurRadius((28f * dm.density).toInt().coerceAtLeast(1))
+                }
+            }
+            setCancelable(true); setCanceledOnTouchOutside(true)
+        }
+        btnOk.setOnClickListener { d.dismiss() }
+        d.show()
     }
 
     /** 新建一块空白 qcow2 存储盘：可自定义名称与容量，建好后直接挂上。 */
