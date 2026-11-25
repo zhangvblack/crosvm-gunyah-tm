@@ -1587,7 +1587,7 @@ class MainActivity : BaseActivity() {
     private fun showFormatGuide() {
         val dm = resources.displayMetrics
         fun dp(v: Float) = (v * dm.density).toInt()
-        val text = """
+        val body = """
             新建的存储盘是一块空白磁盘，Windows 里要先初始化 + 格式化一次（只需做一次）。
 
             1. 按 Win + R，输入 diskmgmt.msc 回车，打开「磁盘管理」
@@ -1615,7 +1615,7 @@ class MainActivity : BaseActivity() {
             })
             addView(android.widget.ScrollView(this@MainActivity).apply {
                 addView(TextView(this@MainActivity).apply {
-                    text = text
+                    setText(body)
                     textSize = 13.5f
                     setTextColor(Glass.textLog())
                     setLineSpacing(dp(3f).toFloat(), 1f)
