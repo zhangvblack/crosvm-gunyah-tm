@@ -1523,17 +1523,60 @@ class MainActivity : BaseActivity() {
             pickMode(mode)
             return
         }
-        android.app.AlertDialog.Builder(this)
-            .setTitle("存储盘")
-            .setItems(arrayOf("挂载已有镜像 / 磁盘文件", "新建空白存储盘")) { _, which ->
-                if (which == 0) {
-                    startActivityForResult(Intent(this, FilePickerActivity::class.java), REQ_DATA)
-                } else {
-                    promptNewStorageDisk()
+        val dm = resources.displayMetrics
+        fun dp(v: Float) = (v * dm.density).toInt()
+        fun glassBtn(label: String) = Button(this).apply {
+            text = label
+            background = Glass.button(this@MainActivity)
+            setTextColor(Glass.textPrimary())
+            textSize = 14f
+            isAllCaps = false
+            isSingleLine = true
+            minHeight = dp(48f); maxHeight = dp(48f)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48f)).apply { topMargin = dp(8f) }
+            Glass.crystalTouch(this)
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = Glass.panel(this@MainActivity, 18f)
+            setPadding(dp(18f), dp(18f), dp(18f), dp(18f))
+            addView(TextView(this@MainActivity).apply {
+                text = "存储盘"
+                textSize = 20f
+                setTextColor(Glass.textPrimary())
+                setPadding(0, 0, 0, dp(10f))
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "额外的读写磁盘：可以挂已有镜像，也可以直接新建一块空白盘。"
+                textSize = 13f
+                setTextColor(Glass.textLog())
+                setPadding(0, 0, 0, dp(4f))
+            })
+        }
+        val btnPick = glassBtn("挂载已有镜像 / 磁盘文件")
+        val btnNew = glassBtn("新建空白存储盘")
+        val btnCancel = glassBtn("取消")
+        box.addView(btnPick); box.addView(btnNew); box.addView(btnCancel)
+        val dialog = HapticDialog(this).apply {
+            setContentView(wrapDialogContent(box))
+            window?.apply {
+                setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                setLayout((dm.widthPixels * 0.9f).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
+                if (android.os.Build.VERSION.SDK_INT >= 32) {
+                    addFlags(android.view.WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                    setBackgroundBlurRadius((28f * dm.density).toInt().coerceAtLeast(1))
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+            setCancelable(true); setCanceledOnTouchOutside(true)
+        }
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnPick.setOnClickListener {
+            dialog.dismiss()
+            startActivityForResult(Intent(this, FilePickerActivity::class.java), REQ_DATA)
+        }
+        btnNew.setOnClickListener { dialog.dismiss(); promptNewStorageDisk() }
+        dialog.show()
     }
 
     /** 新建一块空白 qcow2 当存储盘（默认 64G），建好后直接挂上。 */
@@ -1548,9 +1591,16 @@ class MainActivity : BaseActivity() {
             val p = (12f * dm.density).toInt()
             setPadding(p, p, p, p)
         }
-        android.app.AlertDialog.Builder(this)
+        val host = FrameLayout(this).apply {
+            background = Glass.panel(this@MainActivity, 18f)
+            val p = (18f * dm.density).toInt()
+            setPadding(p, p, p, p)
+            addView(input, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
+        }
+        val dlg = android.app.AlertDialog.Builder(this)
             .setTitle("新建存储盘")
-            .setView(input)
+            .setView(host)
             .setPositiveButton("创建") { _, _ ->
                 val gb = (input.text.toString().toIntOrNull() ?: 64).coerceIn(8, 512)
                 val name = "storage_${System.currentTimeMillis() / 1000}"
@@ -1563,6 +1613,22 @@ class MainActivity : BaseActivity() {
                     runOnUiThread {
                         if (path.isNullOrBlank()) {
                             Toast.makeText(this, "创建失败", Toast.LENGTH_SHORT).show()
+                        } else {
+                            sp.edit().putString(K_DATA_DISK, path).apply()
+                            Toast.makeText(this, "已新建 ${gb}GB 存储盘并挂载", Toast.LENGTH_SHORT).show()
+                            setLogText("存储盘已创建：${File(path).name}（${gb}G，读写挂载）")
+                            pickMode(mode)
+                        }
+                    }
+                }.start()
+            }
+            .setNegativeButton("取消", null)
+            .create()
+        dlg.setOnShowListener {
+            dlg.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            dlg.window?.setLayout((dm.widthPixels * 0.9f).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
+        }
+        dlg.show()
                         } else {
                             sp.edit().putString(K_DATA_DISK, path).apply()
                             Toast.makeText(this, "已新建 ${gb}GB 存储盘并挂载", Toast.LENGTH_SHORT).show()
