@@ -32,6 +32,11 @@ jobs:
         run: |
           cp gradle.properties.example gradle.properties
           sed -i '/^RELEASE_/d' gradle.properties
+          cat >> gradle.properties <<'EOF'
+          RELEASE_STORE_PASSWORD=vmkey123
+          RELEASE_KEY_ALIAS=release
+          RELEASE_KEY_PASSWORD=vmkey123
+          EOF
           grep -q 'android.useAndroidX' gradle.properties || echo 'android.useAndroidX=true' >> gradle.properties
           cat gradle.properties
 

@@ -38,6 +38,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 用固定 keystore 给 debug 包签名：各修改版之间可互相覆盖安装，不必卸载
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
