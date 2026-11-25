@@ -2261,6 +2261,9 @@ class MainActivity : BaseActivity() {
                     cdRom = ""
                     dataDisk = ""
                     bootOrder = "disk"
+                    // 用户挂的存储盘（独立读写盘位 bootindex=8）
+                    val userData = sp.getString(K_DATA_DISK, "") ?: ""
+                    if (userData.isNotBlank()) dataDisk = userData
                 }
 
             }
