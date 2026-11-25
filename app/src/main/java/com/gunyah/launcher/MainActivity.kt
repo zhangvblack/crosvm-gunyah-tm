@@ -1555,7 +1555,11 @@ class MainActivity : BaseActivity() {
                 val gb = (input.text.toString().toIntOrNull() ?: 64).coerceIn(8, 512)
                 val name = "storage_${System.currentTimeMillis() / 1000}"
                 Thread {
-                    val path = runCatching { GunyahManager.createQcow2Disk(this, name, gb) }.getOrNull()
+                    val path: String? = try {
+                        GunyahManager.createQcow2Disk(this, name, gb).getOrNull()
+                    } catch (t: Throwable) {
+                        null
+                    }
                     runOnUiThread {
                         if (path.isNullOrBlank()) {
                             Toast.makeText(this, "创建失败", Toast.LENGTH_SHORT).show()
