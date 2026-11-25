@@ -1631,17 +1631,6 @@ class MainActivity : BaseActivity() {
             dlg.window?.setLayout((dm.widthPixels * 0.9f).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
         }
         dlg.show()
-                        } else {
-                            sp.edit().putString(K_DATA_DISK, path).apply()
-                            Toast.makeText(this, "已新建 ${gb}GB 存储盘并挂载", Toast.LENGTH_SHORT).show()
-                            setLogText("存储盘已创建：${File(path).name}（${gb}G，读写挂载）")
-                            pickMode(mode)
-                        }
-                    }
-                }.start()
-            }
-            .setNegativeButton("取消", null)
-            .show()
     }
 
     /** 当前模式已选的光盘 ISO 路径。 */
