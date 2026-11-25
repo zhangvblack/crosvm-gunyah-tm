@@ -2652,7 +2652,7 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
         when (action) {
             "page_shortcut" -> switchKbPage(1)
             "page_func" -> switchKbPage(3)
-            "page_num" -> switchKbPage(3)
+            "page_num" -> switchKbPage(1)
             "page_letters" -> switchKbPage(0)
             // v1.9.65：短按 ⇧ —— 锁定时解锁，否则切换粘滞大写
             "shift" -> {
