@@ -46,6 +46,7 @@ class MainActivity : BaseActivity() {
     private lateinit var barLinux: View
     private lateinit var btnImport: Button
     private lateinit var btnIso: Button
+    private lateinit var btnData: Button
     private lateinit var btnBlank: Button
     private lateinit var btnBootMode: Button  // Win11：从 PE 装系统 / 从 C 盘启动 切换
     private lateinit var btnGpuLab: Button       // 显示切换（实验室）：simplefb ⇄ GPU 3D
@@ -121,6 +122,7 @@ class MainActivity : BaseActivity() {
         private const val MODE_LINUX = 1
         private const val REQ_IMPORT = 1001
         private const val REQ_ISO = 1002
+        private const val REQ_DATA = 1010
         private const val REQ_CDISK = 1003   // v1.9.4：新建C盘二合一 → 选择成品镜像作 C 盘
         private const val REQ_BOOT = 1004    // v1.9.63：启动控制台返回（失败原因回传主页）
         private const val REQ_BACKUP = 1005  // v1.9.72：选择成品镜像打包为 vmpkg 备份
@@ -131,6 +133,7 @@ class MainActivity : BaseActivity() {
         private const val K_LINUX_TARGET = "linux_target" // Linux 安装目标硬盘（空白盘）
         // Win11 装系统：PE 盘复用 K_WIN_DISK，安装光盘 + 空白 C 盘 + 启动目标独立存储
         private const val K_WIN_ISO = "win11_iso"         // Win11 安装光盘 ISO
+        private const val K_DATA_DISK = "data_disk"       // 数据盘（额外存储，读写挂载）
         private const val K_WIN_TARGET = "win11_target"   // Win11 安装目标 C 盘（空白盘）
         private const val K_WIN_BOOT = "win11_boot"       // "pe"=从PE启动装系统 / "system"=从装好的C盘启动
         private const val K_GPU_LAB = "gpu_lab"           // 旧版布尔开关（兼容迁移用）
@@ -306,6 +309,7 @@ class MainActivity : BaseActivity() {
         btnImport = glassButton("导入镜像")
         btnIso = glassButton("导入光盘")
         btnBlank = glassButton("系统盘")
+        btnData = glassButton("数据盘")
         btnBootMode = glassButton("优先 PE 启动（装系统）", outlined = true)
         // v1.9.32：显示切换 + 原生显示合并为一张玻璃卡（左右两半 + 中间竖线），
         // 省下一条按钮的高度让给启动/停止，避免误点。
@@ -332,6 +336,7 @@ class MainActivity : BaseActivity() {
         btnImport.setOnClickListener { importImage() }
         btnIso.setOnClickListener { onIsoClick() }
         btnBlank.setOnClickListener { onCdiskClick() }
+        btnData.setOnClickListener { onDataClick() }
         btnBootMode.setOnClickListener { toggleWinBootMode() }
         btnStart.setOnClickListener { startVm() }
         btnStop.setOnClickListener { stopVm() }
@@ -661,8 +666,8 @@ class MainActivity : BaseActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_HORIZONTAL
             val m = (6f * dm.density).toInt()
-            val bw = ((dm.widthPixels - pad * 2 - m * 2) / 3)
-            listOf(btnImport, btnIso, btnBlank).forEachIndexed { i, v ->
+            val bw = ((dm.widthPixels - pad * 2 - m * 3) / 4)
+            listOf(btnImport, btnIso, btnBlank, btnData).forEachIndexed { i, v ->
                 addView(v, LinearLayout.LayoutParams(bw, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                     if (i > 0) leftMargin = m
                 })
@@ -1242,6 +1247,8 @@ class MainActivity : BaseActivity() {
         val isoSelected = (sp.getString(if (winSel) K_WIN_ISO else K_LINUX_ISO, "") ?: "").isNotBlank()
         btnIso.text = if (isoSelected) "移除光盘" else "导入光盘"
         btnBlank.text = if (winSel) "系统盘" else "新建安装盘"
+        val dataPath = sp.getString(K_DATA_DISK, "") ?: ""
+        btnData.text = if (dataPath.isNotBlank()) "移除数据盘" else "数据盘"
         btnImport.text = if (isLinux) "导入成品镜像" else "导入 PE 镜像"
         refreshGpuLabButton()
         val preset = if (m == MODE_WIN11) winPreset else linuxPreset
@@ -1497,6 +1504,19 @@ class MainActivity : BaseActivity() {
 
     private fun pickIso() {
         startActivityForResult(Intent(this, FilePickerActivity::class.java), REQ_ISO)
+    }
+
+    /** 数据盘：已挂载时点它卸下，未挂载时选一个镜像/磁盘文件当额外存储（读写挂载）。 */
+    private fun onDataClick() {
+        val cur = sp.getString(K_DATA_DISK, "") ?: ""
+        if (cur.isNotBlank()) {
+            sp.edit().putString(K_DATA_DISK, "").apply()
+            Toast.makeText(this, "已移除数据盘（文件保留）", Toast.LENGTH_SHORT).show()
+            setLogText("已移除数据盘 · 下次启动不再挂载")
+            pickMode(mode)
+        } else {
+            startActivityForResult(Intent(this, FilePickerActivity::class.java), REQ_DATA)
+        }
     }
 
     /** 当前模式已选的光盘 ISO 路径。 */
@@ -1790,6 +1810,13 @@ class MainActivity : BaseActivity() {
             pickMode(mode)
             return
         }
+        if (req == REQ_DATA) {
+            sp.edit().putString(K_DATA_DISK, src).apply()
+            Toast.makeText(this, "已挂载数据盘：$name", Toast.LENGTH_SHORT).show()
+            setLogText("数据盘已挂载：$name（读写）")
+            pickMode(mode)
+            return
+        }
         if (req == REQ_CDISK) {
             // v1.9.56：成品镜像若是 vmpkg 包装，自动识别解包到 disks/ 并引用其中镜像
             if (VmpkgExtractor.isVmpkg(src)) {
@@ -2060,6 +2087,7 @@ class MainActivity : BaseActivity() {
                     dataDisk = ""
                     bootOrder = "disk"
                 }
+
             }
         }
         return cfg
