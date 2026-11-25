@@ -1459,13 +1459,34 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
      *    点它出键盘，沿边可滑动换位置，向屏内拖 42dp 以上还原浮球。
      * 形态、所贴边、位置全部持久化；旋转/窗口尺寸变化自动重新贴边。
      */
+    /** 键盘入口自动淡出：3 秒不动 → 半透明；触摸 → 恢复。 */
+    private var autoHide: Runnable? = null
+    private fun scheduleAutoHide() {
+        cancelAutoHide()
+        val r = Runnable {
+            if (::ball.isInitialized) {
+                ball.animate().alpha(0.35f).setDuration(500).start()
+            }
+        }
+        autoHide = r
+        ui.postDelayed(r, 3000)
+    }
+    private fun cancelAutoHide() {
+        autoHide?.let { ui.removeCallbacks(it) }
+        autoHide = null
+        if (::ball.isInitialized) ball.alpha = 1f
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun buildBall(): TextView = TextView(this).apply {
-        text = "⌨"
+        text = "🐟"
         setTextColor(Color.WHITE)
         textSize = 26f
         gravity = Gravity.CENTER
-        setBackgroundColor(0xE63A7E9B.toInt())
+        background = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(0xFFFF8FB1.toInt(), 0xFF7BD3EA.toInt())
+        ).apply { shape = GradientDrawable.OVAL }
         val d = resources.displayMetrics.density
         val size = (58 * d).roundToInt()
         layoutParams = FrameLayout.LayoutParams(size, size).apply {
@@ -1484,6 +1505,7 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
                     ox = lp.leftMargin.toFloat(); oy = lp.topMargin.toFloat()
                     moved = false; undocked = false
                     entryDragging = true
+                    cancelAutoHide()
                     // v2.0.15：状态卡片删了，长按 ⌨ 临时看链路诊断（不占画面）。
                     longPress = Runnable { showDiagnostics(); longPress = null }
                     longPress?.let { ui.postDelayed(it, 600) }
@@ -1549,7 +1571,7 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
                     } else {
                         if (!moved) showBallMenu(v) else saveEntry()
                     }
-                    v.performClick(); true
+                    v.performClick(); scheduleAutoHide(); true
                 }
                 MotionEvent.ACTION_CANCEL -> { cancelLongPress(); entryDragging = false; true }
                 else -> true
@@ -1568,8 +1590,11 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
         if (dockEdge == 0) {
             val size = (58 * d).roundToInt()
             lp.width = size; lp.height = size
-            ball.setBackgroundColor(0xE63A7E9B.toInt())   // 与原浮球完全一致，不做外观负优化
-            ball.text = "⌨"
+            ball.background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(0xFFFF8FB1.toInt(), 0xFF7BD3EA.toInt())
+            ).apply { shape = GradientDrawable.OVAL }   // 与原浮球完全一致，不做外观负优化
+            ball.text = "🐟"
             ball.setTextColor(Color.WHITE)
             ball.textSize = 26f
             ball.alpha = 0.95f
@@ -1597,6 +1622,7 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
         ball.layoutParams = lp
         entryReady = true
         positionEntry()
+        scheduleAutoHide()
     }
 
     /** 半透明渐变 + 细白边 + 居中小白杠 = 模糊透明「杠条」（不依赖系统窗口模糊）。 */
