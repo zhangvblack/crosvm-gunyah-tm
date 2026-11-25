@@ -45,12 +45,17 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
+      - name: Rename APK
+        run: |
+          SRC=$(ls /tmp/gunyabuild/app/outputs/apk/debug/*.apk 2>/dev/null | head -1)
+          if [ -z "$SRC" ]; then SRC=$(ls app/build/outputs/apk/debug/*.apk | head -1); fi
+          cp "$SRC" "GunyahVM-v1.9.81-b${GITHUB_RUN_NUMBER}.apk"
+          ls -lh GunyahVM-v1.9.81-b${GITHUB_RUN_NUMBER}.apk
+
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            /tmp/gunyabuild/**/outputs/apk/debug/*.apk
+          path: GunyahVM-*.apk
           if-no-files-found: warn
