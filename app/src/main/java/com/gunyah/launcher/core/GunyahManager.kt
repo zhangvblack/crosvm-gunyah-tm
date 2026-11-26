@@ -1389,8 +1389,41 @@ object GunyahManager {
         val f = bootScript(ctx)
         f.writeText(script)
         f.setExecutable(true, false)
+        runCatching {
+            val rf = NetWatcher.refreshScript(ctx)
+            rf.writeText(buildNetRefreshScript())
+            rf.setExecutable(true, false)
+        }
         return f
     }
+
+    /**
+     * 网络切换刷新脚本：重新探测默认上行网卡，重写 SNAT + 独立路由表 200 的策略路由。
+     * 由 NetWatcher 在默认网络变化时以 root 执行（虚拟机没跑时几乎无副作用）。
+     */
+    private fun buildNetRefreshScript(): String = """
+#!/system/bin/sh
+BR=gunybr0
+[ -d /sys/class/net/${'$'}BR ] || exit 0
+
+DEV=""
+for d in ${'$'}(ip route show default 2>/dev/null | awk '{print ${'$'}5}'); do DEV=${'$'}d; break; done
+[ -z "${'$'}DEV" ] && exit 0
+GW=${'$'}(ip route show default 2>/dev/null | awk '/default/{print ${'$'}3; exit}')
+
+iptables -w 5 -t nat -D POSTROUTING -s 192.168.100.0/24 -j MASQUERADE 2>/dev/null
+iptables -w 5 -t nat -D POSTROUTING -s 192.168.100.0/24 -o "${'$'}DEV" -j MASQUERADE 2>/dev/null
+iptables -w 5 -t nat -A POSTROUTING -s 192.168.100.0/24 -o "${'$'}DEV" -j MASQUERADE 2>/dev/null
+
+if [ -n "${'$'}GW" ]; then
+  ip route replace default via "${'$'}GW" dev "${'$'}DEV" table 200 2>/dev/null
+else
+  ip route replace default dev "${'$'}DEV" table 200 2>/dev/null
+fi
+ip rule add from 192.168.100.0/24 lookup 200 pref 12000 2>/dev/null
+ip rule add to 192.168.100.0/24 lookup 200 pref 11999 2>/dev/null
+echo "net-refresh: dev=${'$'}DEV gw=${'$'}GW"
+""".trimIndent()
 
     fun buildStopScript(ctx: Context): File {
         ensureDirs(ctx)
@@ -4853,6 +4886,11 @@ done
         if (head.contains("已有一个启动流程在跑")) {
             return false to "上一次启动还在进行中（或未完全退出）。请先点「停止」，等 3 秒再启动。"
         }
+        // 网络监听：WiFi ⇄ 流量切换后自动重写 NAT，guest 不必重启虚拟机
+        runCatching {
+            NetWatcher.start(ctx, NetWatcher.refreshScript(ctx))
+            NetWatcher.apply()
+        }.onFailure { Log.w("GunyahManager", "NetWatcher start failed", it) }
         return true to "已下发启动指令（日志: ${log.absolutePath}）"
     }
 
@@ -4874,6 +4912,7 @@ done
      */
     fun stop(ctx: Context): Pair<Boolean, String> {
         TouchBridge.stop()
+        runCatching { NetWatcher.stop() }
         // 先写启动中止标记：启动监督循环每一步都查它，命中立即退出，
         // 避免「杀了当前 crosvm → 脚本误判这组失败 → 继续试 2/5..5/5」的假暂停。
         runCatching { File(privateDir(ctx), BOOT_ABORT).createNewFile() }
