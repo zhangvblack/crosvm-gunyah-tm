@@ -1556,11 +1556,10 @@ class MainActivity : BaseActivity() {
                 setPadding(0, 0, 0, dp(4f))
             })
         }
-        val btnPick = glassBtn("挂载已有磁盘（qcow2/raw/img）")
         val btnNew = glassBtn("新建存储盘")
         val btnGuide = glassBtn("格式化教程（新建盘首次使用）")
         val btnCancel = glassBtn("取消")
-        box.addView(btnPick); box.addView(btnNew); box.addView(btnGuide); box.addView(btnCancel)
+        box.addView(btnNew); box.addView(btnGuide); box.addView(btnCancel)
         val dialog = HapticDialog(this).apply {
             setContentView(wrapDialogContent(box))
             window?.apply {
@@ -1574,10 +1573,6 @@ class MainActivity : BaseActivity() {
             setCancelable(true); setCanceledOnTouchOutside(true)
         }
         btnCancel.setOnClickListener { dialog.dismiss() }
-        btnPick.setOnClickListener {
-            dialog.dismiss()
-            startActivityForResult(Intent(this, FilePickerActivity::class.java), REQ_DATA)
-        }
         btnNew.setOnClickListener { dialog.dismiss(); promptNewStorageDisk() }
         btnGuide.setOnClickListener { dialog.dismiss(); showFormatGuide() }
         if (cur.isNotBlank()) {
