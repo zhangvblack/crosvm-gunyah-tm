@@ -103,14 +103,29 @@ object ImeKeyBridge {
         else -> null
     }
 
+    // 长文本（粘贴）不能一次性灌进去：guest 的输入队列会溢出，表现为「只进去后半段」。
+    // 改成后台单线程逐字符发，每字符 flush 一次并留 2ms 间隔。
+    private val typer = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread(r, "ime-type").apply { isDaemon = true }
+    }
+
     /** 逐个字符发出：Shift↓ → 键↓ → 键↑ → Shift↑（与已验证的 sendKeyTap 顺序一致）。 */
     fun type(text: String, sink: OutputStream) {
-        for (c in text) {
-            val (code, needShift) = map(c) ?: continue
-            if (needShift) EvdevEncoder.sendKey(sink, SHIFT.toShort(), true)
-            EvdevEncoder.sendKey(sink, code.toShort(), true)
-            EvdevEncoder.sendKey(sink, code.toShort(), false)
-            if (needShift) EvdevEncoder.sendKey(sink, SHIFT.toShort(), false)
+        val payload = text
+        typer.execute {
+            for (c in payload) {
+                val (code, needShift) = map(c) ?: continue
+                try {
+                    if (needShift) EvdevEncoder.sendKey(sink, SHIFT.toShort(), true)
+                    EvdevEncoder.sendKey(sink, code.toShort(), true)
+                    EvdevEncoder.sendKey(sink, code.toShort(), false)
+                    if (needShift) EvdevEncoder.sendKey(sink, SHIFT.toShort(), false)
+                    sink.flush()
+                } catch (t: Throwable) {
+                    break
+                }
+                try { Thread.sleep(2) } catch (_: InterruptedException) { break }
+            }
         }
     }
 
