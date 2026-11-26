@@ -1580,6 +1580,28 @@ class MainActivity : BaseActivity() {
         }
         btnNew.setOnClickListener { dialog.dismiss(); promptNewStorageDisk() }
         btnGuide.setOnClickListener { dialog.dismiss(); showFormatGuide() }
+        if (cur.isNotBlank()) {
+            val btnRemove = Button(this).apply {
+                text = "移除当前存储盘"
+                background = Glass.button(this@MainActivity)
+                setTextColor(Glass.statusWarn())
+                textSize = 14f
+                isAllCaps = false
+                isSingleLine = true
+                minHeight = dp(48f); maxHeight = dp(48f)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, dp(48f)).apply { topMargin = dp(8f) }
+                Glass.crystalTouch(this)
+            }
+            box.addView(btnRemove, box.childCount - 1)
+            btnRemove.setOnClickListener {
+                sp.edit().putString(K_DATA_DISK, "").apply()
+                Toast.makeText(this, "已移除存储盘（文件保留）", Toast.LENGTH_SHORT).show()
+                setLogText("已移除存储盘 · 下次启动不再挂载")
+                dialog.dismiss()
+                pickMode(mode)
+            }
+        }
         dialog.show()
     }
 
