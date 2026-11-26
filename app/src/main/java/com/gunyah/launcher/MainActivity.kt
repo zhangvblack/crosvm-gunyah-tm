@@ -1550,13 +1550,13 @@ class MainActivity : BaseActivity() {
                 setPadding(0, 0, 0, dp(10f))
             })
             addView(TextView(this@MainActivity).apply {
-                text = "挂载一块独立的存储磁盘（和系统盘并存）。要先停止虚拟机，启动中不能加盘。"
+                text = "挂载一块独立的磁盘镜像当数据盘（和系统盘并存）。\nISO 光盘请用上面「导入光盘」，这里不认 ISO。\n要先停止虚拟机，启动中不能加盘。"
                 textSize = 13f
                 setTextColor(Glass.textLog())
                 setPadding(0, 0, 0, dp(4f))
             })
         }
-        val btnPick = glassBtn("挂载存储盘 / 镜像文件盘")
+        val btnPick = glassBtn("挂载已有磁盘（qcow2/raw/img）")
         val btnNew = glassBtn("新建存储盘")
         val btnGuide = glassBtn("格式化教程（新建盘首次使用）")
         val btnCancel = glassBtn("取消")
