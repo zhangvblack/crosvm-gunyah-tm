@@ -1418,11 +1418,9 @@ fi
 
 GW=${'$'}(ip route get 223.5.5.5 2>/dev/null | awk '{for(i=1;i<=NF;i++) if(${ '$' }i=="via"){print ${ '$' }(i+1); exit}}')
 
-# 先清掉所有针对 guest 网段的 SNAT，避免切换多次后规则堆积
-while iptables -w 5 -t nat -S POSTROUTING 2>/dev/null | grep -q '192.168.100.0/24.*MASQUERADE'; do
-  iptables -w 5 -t nat -D POSTROUTING -s 192.168.100.0/24 ! -o ${'$'}BR -j MASQUERADE 2>/dev/null \
-    || iptables -w 5 -t nat -D POSTROUTING -s 192.168.100.0/24 -j MASQUERADE 2>/dev/null \
-    || break
+# 先清掉所有针对 guest 网段的 SNAT（含各种 -o <网卡>），避免切换多次后规则堆积
+for rule in $(iptables -w 5 -t nat -S POSTROUTING 2>/dev/null | grep '192.168.100.0/24' | sed 's/^-A POSTROUTING /-D POSTROUTING /'); do
+  iptables -w 5 -t nat ${'$'}rule 2>/dev/null || true
 done
 
 iptables -w 5 -t nat -A POSTROUTING -s 192.168.100.0/24 -o "${'$'}DEV" -j MASQUERADE 2>/dev/null

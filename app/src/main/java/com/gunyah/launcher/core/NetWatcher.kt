@@ -19,6 +19,7 @@ object NetWatcher {
     private var cb: ConnectivityManager.NetworkCallback? = null
 
     @Volatile private var script: File? = null
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
 
     /** 刷新脚本：由 GunyahManager 在启动虚拟机时落盘。 */
     fun refreshScript(ctx: Context): File = File(GunyahManager.privateDir(ctx), "net-refresh.sh")
@@ -34,7 +35,11 @@ object NetWatcher {
                     cm?.getLinkProperties(network)?.interfaceName
                 }.getOrNull()
                 Log.i(TAG, "default network changed -> $network iface=$iface")
-                apply(iface)
+                // 新网络刚可用时路由还没落表，立刻刷会拿到旧网卡；
+                // 分几次重写，既快又稳。
+                for (delay in longArrayOf(400L, 1500L, 4000L, 8000L)) {
+                    handler.postDelayed({ apply(iface) }, delay)
+                }
             }
             override fun onLost(network: Network) {
                 Log.i(TAG, "default network lost -> $network")
