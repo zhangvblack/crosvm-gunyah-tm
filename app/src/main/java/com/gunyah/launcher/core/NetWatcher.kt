@@ -30,8 +30,11 @@ object NetWatcher {
         cm = mgr
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                Log.i(TAG, "default network changed -> $network")
-                apply()
+                val iface = runCatching {
+                    cm?.getLinkProperties(network)?.interfaceName
+                }.getOrNull()
+                Log.i(TAG, "default network changed -> $network iface=$iface")
+                apply(iface)
             }
             override fun onLost(network: Network) {
                 Log.i(TAG, "default network lost -> $network")
@@ -50,13 +53,14 @@ object NetWatcher {
     }
 
     /** 立刻按当前默认网络重写 NAT；虚拟机没在跑时脚本会自己退出。 */
-    fun apply() {
+    fun apply(iface: String? = null) {
         val f = script ?: return
         if (!f.isFile) return
+        val arg = iface?.let { " " + it } ?: ""
         Thread {
             runCatching {
                 val p = ProcessBuilder(
-                    "su", "-c", "sh ${f.absolutePath}"
+                    "su", "-c", "sh ${f.absolutePath}$arg"
                 ).redirectErrorStream(true).start()
                 p.inputStream.bufferedReader().use { r -> r.readText() }
                 p.waitFor()

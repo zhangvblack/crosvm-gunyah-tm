@@ -1403,16 +1403,28 @@ object GunyahManager {
      */
     private fun buildNetRefreshScript(): String = """
 #!/system/bin/sh
+# 用法: sh net-refresh.sh [上行网卡名]
+# 上行网卡由 APP 从 ConnectivityManager 取到后传进来；没传就自己按路由查。
 BR=gunybr0
 [ -d /sys/class/net/${'$'}BR ] || exit 0
 
-DEV=""
-for d in ${'$'}(ip route show default 2>/dev/null | awk '{print ${'$'}5}'); do DEV=${'$'}d; break; done
+DEV="${'$'}1"
+if [ -z "${'$'}DEV" ]; then
+  DEV=${'$'}(ip route get 223.5.5.5 2>/dev/null | awk '{for(i=1;i<=NF;i++) if(${ '$' }i=="dev"){print ${ '$' }(i+1); exit}}')
+fi
 [ -z "${'$'}DEV" ] && exit 0
-GW=${'$'}(ip route show default 2>/dev/null | awk '/default/{print ${'$'}3; exit}')
+[ -d "/sys/class/net/${'$'}DEV" ] || exit 0
+[ "${'$'}DEV" = "${'$'}BR" ] && exit 0
 
-iptables -w 5 -t nat -D POSTROUTING -s 192.168.100.0/24 -j MASQUERADE 2>/dev/null
-iptables -w 5 -t nat -D POSTROUTING -s 192.168.100.0/24 -o "${'$'}DEV" -j MASQUERADE 2>/dev/null
+GW=${'$'}(ip route get 223.5.5.5 2>/dev/null | awk '{for(i=1;i<=NF;i++) if(${ '$' }i=="via"){print ${ '$' }(i+1); exit}}')
+
+# 先清掉所有针对 guest 网段的 SNAT，避免切换多次后规则堆积
+while iptables -w 5 -t nat -S POSTROUTING 2>/dev/null | grep -q '192.168.100.0/24.*MASQUERADE'; do
+  iptables -w 5 -t nat -D POSTROUTING -s 192.168.100.0/24 ! -o ${'$'}BR -j MASQUERADE 2>/dev/null \
+    || iptables -w 5 -t nat -D POSTROUTING -s 192.168.100.0/24 -j MASQUERADE 2>/dev/null \
+    || break
+done
+
 iptables -w 5 -t nat -A POSTROUTING -s 192.168.100.0/24 -o "${'$'}DEV" -j MASQUERADE 2>/dev/null
 
 if [ -n "${'$'}GW" ]; then
