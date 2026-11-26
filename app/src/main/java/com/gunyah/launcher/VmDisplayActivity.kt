@@ -2019,6 +2019,7 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
                 kbLetters("zxcvbnm", K.KEY_Z) +
                 listOf(KbKey("⌫", K.KEY_BACKSPACE, 1.4f)),
             listOf(
+                KbKey("⊞", K.KEY_LEFTMETA, 1.1f),
                 KbKey("Ctrl", K.KEY_LEFTCTRL, 1.2f),
                 KbKey("Alt", K.KEY_LEFTALT, 1.1f),
                 KbKey("Esc", K.KEY_ESC, 1.1f),
