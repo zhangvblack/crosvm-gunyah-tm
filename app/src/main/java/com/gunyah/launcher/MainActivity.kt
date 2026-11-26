@@ -2332,7 +2332,8 @@ class MainActivity : BaseActivity() {
                     systemDisk = winTarget
                     systemDiskRo = false
                     bootDisk = ""
-                    cdRom = ""
+                    // 从 C 盘启动时也保留光盘（用来读驱动 ISO），不再清空
+                    cdRom = if (winIso.isNotBlank()) winIso else ""
                     dataDisk = ""
                     bootOrder = "disk"
                     // 用户挂的存储盘（独立读写盘位 bootindex=8）
