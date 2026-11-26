@@ -103,5 +103,16 @@ class NativeDisplayRootService : RootService() {
             }
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        // 防杀：本进程托管着 4 路输入 socket，被系统回收后 crosvm 不会重连，
+        // 表现就是「画面在、怎么点都没反应」。把 oom_score_adj 压到 -1000（root 进程可行），
+        // 让它和前台应用同级别，尽量不被 LMK 回收。
+        runCatching {
+            java.io.File("/proc/self/oom_score_adj").writeText("-1000")
+            Log.i(TAG, "oom_score_adj = -1000")
+        }.onFailure { Log.w(TAG, "set oom_score_adj failed", it) }
+    }
+
     override fun onBind(intent: Intent): IBinder = bridge
 }
