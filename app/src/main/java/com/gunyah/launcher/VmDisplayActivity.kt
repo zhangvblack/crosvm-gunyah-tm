@@ -131,13 +131,13 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
         private const val SP_FULLSCREEN = "fullscreen_mode"
         private const val DRAG_SLOP_DP = 12f    // 超过它才判定为「拖动工具条」，轻点仍是按钮
         // v2.0.16：按键反馈配色（图2 效果）
-        // v3.0：手机输入法浅色风格——白键 / 浅灰按下 / 深色字
-        private val KB_BG = 0xFFFFFFFF.toInt()
-        private val KB_BG_DOWN = 0xFFD6DBE1.toInt()
-        private val KB_TEXT = 0xFF1B1B1F.toInt()
-        private val KB_TEXT_ACCENT = 0xFF0A84FF.toInt()
-        private val KB_PANEL_BG = 0xFFE8EAED.toInt()
-        private val PREVIEW_BG = 0xFF37474F.toInt()
+        // v3.1：深色键帽 / 更深按下 / 亮字
+        private val KB_BG = 0xFF2B3038.toInt()
+        private val KB_BG_DOWN = 0xFF171A1F.toInt()
+        private val KB_TEXT = 0xFFF2F4F8.toInt()
+        private val KB_TEXT_ACCENT = 0xFF6FB7FF.toInt()
+        private val KB_PANEL_BG = 0xFF14171C.toInt()
+        private val PREVIEW_BG = 0xFF0E1116.toInt()
     }
 
     private lateinit var surfaceView: SurfaceView
@@ -2230,7 +2230,7 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
             val d = resources.displayMetrics.density
             setPadding((2 * d).roundToInt(), (5 * d).roundToInt(),
                 (2 * d).roundToInt(), (5 * d).roundToInt())
-            setBackgroundColor(0xFFF5F6F8.toInt())
+            setBackgroundColor(0xFF1A1E24.toInt())
             layoutParams = LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, weight
             ).apply { setMargins(1, 1, 1, 2) }
@@ -2575,7 +2575,7 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
         return GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = 6f * d
-            setColor((if (pressed) KB_BG_DOWN else if (accent) 0xFFDCE9FF.toInt() else KB_BG).toInt())
+            setColor((if (pressed) KB_BG_DOWN else if (accent) 0xFF3A4A63.toInt() else KB_BG).toInt())
         }
     }
 
