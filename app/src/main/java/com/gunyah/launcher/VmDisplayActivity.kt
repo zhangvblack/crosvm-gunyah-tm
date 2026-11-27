@@ -2013,23 +2013,34 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
     private val letterRows: List<List<KbKey>> by lazy {
         val K = KeyCodeMapper
         listOf(
-            kbLetters("qwertyuiop", K.KEY_Q),
-            kbLetters("asdfghjkl", K.KEY_A),
-            listOf(KbKey("⇧", 0, 1.1f, action = "shift")) +
+            // 第 1 行：数字行（PC 键盘顶部）
+            kbLetters("1234567890", K.KEY_1) +
+                listOf(KbKey("⌫", K.KEY_BACKSPACE, 1.5f)),
+            // 第 2 行：Tab + 字母
+            listOf(KbKey("Tab", K.KEY_TAB, 1.4f)) +
+                kbLetters("qwertyuiop", K.KEY_Q),
+            // 第 3 行：CapsLock + 字母 + 回车
+            listOf(KbKey("Caps", K.KEY_CAPSLOCK, 1.5f)) +
+                kbLetters("asdfghjkl", K.KEY_A) +
+                listOf(KbKey("↵", K.KEY_ENTER, 1.5f)),
+            // 第 4 行：Shift + 字母 + 标点 + Shift
+            listOf(KbKey("⇧", 0, 1.4f, action = "shift")) +
                 kbLetters("zxcvbnm", K.KEY_Z) +
-                listOf(KbKey("⌫", K.KEY_BACKSPACE, 1.4f)),
+                listOf(
+                    KbKey(",", K.KEY_COMMA),
+                    KbKey(".", K.KEY_DOT),
+                    KbKey("/", K.KEY_SLASH),
+                    KbKey("⇧", 0, 1.4f, action = "shift"),
+                ),
+            // 第 5 行：功能键入口 + 修饰键 + 方向键
             listOf(
-                KbKey("⊞", K.KEY_LEFTMETA, 1.1f),
+                KbKey("F1-12", 0, 1.5f, action = "page_func"),
                 KbKey("Ctrl", K.KEY_LEFTCTRL, 1.2f),
+                KbKey("⊞", K.KEY_LEFTMETA, 1.0f),
                 KbKey("Alt", K.KEY_LEFTALT, 1.1f),
-                KbKey("Esc", K.KEY_ESC, 1.1f),
-                KbKey("Tab", K.KEY_TAB, 1.1f),
-                KbKey("空格", K.KEY_SPACE, 2.6f),
-                KbKey("↵", K.KEY_ENTER, 1.2f),
-            ),
-            listOf(
+                KbKey("空格", K.KEY_SPACE, 2.0f),
                 KbKey("?123", 0, 1.3f, action = "page_num"),
-                KbKey("F1-12", 0, 1.4f, action = "page_func"),
+                KbKey("Esc", K.KEY_ESC, 1.2f),
                 KbKey("◀", K.KEY_LEFT), KbKey("▲", K.KEY_UP),
                 KbKey("▼", K.KEY_DOWN), KbKey("▶", K.KEY_RIGHT),
             ),
@@ -2079,9 +2090,18 @@ class VmDisplayActivity : BaseActivity(), SurfaceHolder.Callback {
             (1..6).map { KbKey("F$it", K.KEY_F1 + it - 1) },
             (7..12).map { KbKey("F$it", if (it <= 10) K.KEY_F1 + it - 1 else if (it == 11) K.KEY_F11 else K.KEY_F12) },
             listOf(
-                KbKey("⇧F10", K.KEY_F10, 1.6f, shift = true),
-                KbKey("abc", 0, 1.6f, action = "page_letters"),
-                KbKey("?123", 0, 1.4f, action = "page_num"),
+                KbKey("⇧F10", K.KEY_F10, 1.5f, shift = true),
+                KbKey("Ins", K.KEY_INSERT, 1.1f),
+                KbKey("Del", K.KEY_DELETE, 1.1f),
+                KbKey("Home", K.KEY_HOME, 1.3f),
+                KbKey("End", K.KEY_END, 1.3f),
+            ),
+            listOf(
+                KbKey("PgUp", K.KEY_PAGEUP, 1.3f),
+                KbKey("PgDn", K.KEY_PAGEDOWN, 1.3f),
+                KbKey("◀", K.KEY_LEFT), KbKey("▲", K.KEY_UP),
+                KbKey("▼", K.KEY_DOWN), KbKey("▶", K.KEY_RIGHT),
+                KbKey("abc", 0, 1.5f, action = "page_letters"),
             ),
         )
     }
